@@ -1,0 +1,85 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Sep 27 18:59:38 2018
+
+@author: Deji Ayinde
+"""
+
+import pandas as pd
+
+data = pd.read_table("C:/Users/djmax/UCONN Email Analysis 2018/working data/finaldata_team7.txt", engine = 'python')
+
+
+#Variables in the dataset
+"""data.columns
+      ['user_id', 'MessageTitle', 'MessageVersionSent', 'SentAt', 'OpenedAt', 'ClickedAt', 'HitGoalAt', 'Replied_RespondedAt', 'UnsubscribedAt',
+       'BouncedAt', 'MarkedAsSpamAt', 'TimeOfDaySent', 'WeekDaySent', 'TimeOfDayOpen', 'WeekDayOpen', 'timeToOpenMins', 'Count_words_content',
+       'Count_words_subject', 'Subject_line', 'Subject_type', 'Subject_salutation_flag', 'Image_present_flag', 'Image_placement',
+       'Call_button_placement', 'call_button_count', 'content_type','Message_salutation_flag', 'Image_type', 'Disclaimer',
+       'Exclamation_Mark', 'Tone_TBD', 'folder', 'gender_intercom', 'country','region', 'city', 'branch_location', 'sign_in_link', 'company_id',
+       'people_at_company', 'company_web_sessions', 'parent_organization_2','user_type', 'first_seen_edt', 'last_seen_edt', 'last_contacted_edt',
+       'last_heard_from_edt', 'last_opened_email_edt','last_clicked_on_email_edt', 'web_sessions', 'unsubscribed_from_emails',
+       'marked_email_as_spam', 'has_hard_bounce', 'company_name', 'gender_Lifeiodatabase', 'age_Lifeiodatabase', 'zip_Lifeiodatabase',
+       'Bounce_flag', 'sent_flag', 'open_flag', 'click_flag', 'hitgoal_flag','hitgoal_web_flag']"""
+
+#Delivered mails 
+'''deliveredMails = data['user_id'].count() - data.loc[data['Bounce_flag'] ==1, 'Bounce_flag'].count()    or
+deliveredMails = data.loc[data['Bounce_flag'] == 0, 'Bounce_flag'].count()'''
+
+
+
+#output of email analysis are stored in result
+result = pd.DataFrame(columns = ('version','variable','varValue', 'openRate', 'clickToOpenRate','hitGoalRate','interationRate','bounceRate','spamRate',
+                                 'countOfSent', 'countOfDelivered', 'numOfOpen', 'countOfClick',  'countOfHitGoal', 'countOfBounce'))
+
+#Variables that were examined for how they affect openRate, clickRate ...
+variables = ('Count_words_subject','Count_words_content', 'Call_button_placement', 'Message_salutation_flag','Tone_TBD','user_type','TimeOfDaySent', 'WeekDaySent', 'gender_Lifeiodatabase','Subject_line', 'Subject_type', 'Subject_salutation_flag', 'Image_present_flag')
+
+#Email Version examined
+version = data['MessageVersionSent'].unique()
+#version = (41137764 ,20893468 ,20896492 ,20897470 ,47440746 ,47441035 ,47441342)
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Method for implementing Email analysis             
+def metric(subdata):
+    
+    #defining the parameters used in calculating different rates
+    sent = subdata['user_id'].count()
+    deliveredMails = subdata.loc[subdata['Bounce_flag'] == 0, 'Bounce_flag'].count()
+    numOfOpen = subdata.loc[subdata['open_flag'] == 1, 'open_flag'].count()
+    numOfClicks = subdata.loc[subdata['click_flag'] ==1, 'click_flag'].count()
+    numOfHitGoal = subdata.loc[subdata['hitgoal_flag'] ==1, 'hitgoal_flag'].count()
+    interact = subdata.loc[subdata['web_sessions'] > 0, 'web_sessions'].count()   #hit goal web flag
+    bounce = subdata.loc[subdata['Bounce_flag'] == 1, 'Bounce_flag'].count()
+    spam = subdata.loc[subdata['marked_email_as_spam'] == True, 'marked_email_as_spam'].count() 
+    
+     #Rate caluclation
+    openRate = numOfOpen/deliveredMails
+    clickToOpenRate = numOfClicks/deliveredMails
+    hitGoalRate = numOfHitGoal/deliveredMails
+    interationRate = interact/deliveredMails
+    bounceRate = bounce/sent
+    spamRate = spam/deliveredMails
+    
+    #output of analysis
+    output = pd.DataFrame({'version':[v],'variable' : [var], 'varValue' : [vc], 'openRate':[openRate],'clickToOpenRate':[clickToOpenRate],'hitGoalRate':[hitGoalRate],
+                           'interationRate':[interationRate],'bounceRate':[bounceRate],'spamRate':[spamRate],
+                           'countOfSent':[sent], 'countOfDelivered':[deliveredMails], 'numOfOpen':[numOfOpen], 'countOfClick':[numOfClicks],  'countOfHitGoal':[numOfHitGoal], 'countOfBounce':[bounce]})
+    #for entire data only
+    '''output = pd.DataFrame({'callValue' : [call],'openRate':[openRate],'clickToOpenRate':[clickToOpenRate],'hitGoalRate':[hitGoalRate],'interationRate':[interationRate],'bounceRate':[bounceRate],'spamRate':[spamRate],
+                           'countOfSent':[sent], 'countOfDelivered':[deliveredMails], 'numOfOpen':[numOfOpen], 'countOfClick':[numOfClicks],  'countOfHitGoal':[numOfHitGoal], 'countOfBounce':[bounce]})'''
+ 
+    #'countOfSent':[sent], 'countOfClick':[numOfClicks],  'countOfHitGoal':[numOfHitGoal], 'countOfBounce':[bounce]
+    
+    return output
+#Metrics calculation and dataframe creation-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+for i, v in enumerate(version):     #version number level
+    subdata = data[data['MessageVersionSent'] == v]
+    
+    for var in variables:          #variable level
+        varcontent = subdata[var].unique()      #extracting the measures
+        
+        for vc in varcontent:       #measure level
+            vcdata = subdata[subdata[var] == vc]
+            result = result.append(metric(vcdata), ignore_index =False)
