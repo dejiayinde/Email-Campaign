@@ -1,0 +1,176 @@
+
+import numpy as np
+import pandas as pd
+import re
+
+
+#Reading data into python environment
+a20bp = pd.read_csv('20 Bonus Points/message-data-export.wsbipu3g.7539ce7c-0c90-4875-9e45-b4cda9b13165.csv')  #20 Bonus Points
+cw20p = pd.read_csv('Co-Workers + 20 points/message-data-export.wsbipu3g.c8bf9f17-a5af-4692-842f-31163391b04c.csv') #Co-Workers + 20 points
+jwf = pd.read_csv('Join your work friends/message-data-export.wsbipu3g.d3cd2cfb-20ec-43a2-ae95-779145b7edf9.csv') #Join your work friends
+lc20p = pd.read_csv('Last chance 20 Points/message-data-export.wsbipu3g.294f9fa8-c290-4b77-8633-4bee897cd6c3.csv') #Last chance 20 Points
+demography = pd.read_csv('User demographic info/User Demographic Data v1.csv') #User demographic info
+
+met1 = pd.read_csv('MetLife - 4 ways to succeed with MetLife Wellbeing/message-data-export.wsbipu3g.e1783dab-cdb1-43c4-8806-9b7f751c815d.csv') #4 ways to succeed with MetLife Wellbeing
+met2 = pd.read_csv('MetLife - hello, start your metlife wellbeing journey/message-data-export.wsbipu3g.d776a5fd-cc3a-4df7-be31-729037c09c74.csv') #hello, start your metlife wellbeing journey
+met3 = pd.read_csv('MetLife - Invest in your most valuable asset, you/message-data-export.wsbipu3g.66399fc3-c0a3-4337-bbd1-ef7c8403d1c9.csv') #Invest in your most valuable asset, you
+met4 = pd.read_csv('MetLife - Metlife Wellbeing Has Something Special For You/message-data-export.wsbipu3g.3f127d69-ca6c-41b8-9990-37ddde504e5c.csv') #Metlife Wellbeing Has Something Special For You
+met5 = pd.read_csv('MetLife - Win big with MetLife Wellbeing/message-data-export.wsbipu3g.d0884e8d-4b3a-4884-bd39-720b1a9fe5c1.csv') #Win big with MetLife Wellbeing
+met6 = pd.read_csv('MetLife Boost your Health/message-data-export.wsbipu3g.b663d2e5-4f48-476d-8668-14f17f041f68.csv') #Boost your Health
+met7 = pd.read_csv('MetLife Ready for Healthier You/message-data-export.wsbipu3g.5ab20d15-ff17-4e4b-8d44-0882792eb533.csv') #Ready for Healthier You
+met8 = pd.read_csv('MetLife Wellbeing Journey/message-data-export.wsbipu3g.8bfaa69a-ab24-457a-b275-3fbb1911e7cd.csv') #Wellbeing Journey
+met9 = pd.read_csv('MetLife Wellbeing Journey - abridged/message-data-export.wsbipu3g.b004496d-6c0f-49c1-8fce-db35b8c8b514.csv') #Wellbeing Journey
+
+sfarm1 = pd.read_csv('State Farm - A healthier _name_ starts with/message-data-export.wsbipu3g.dea37215-59b9-4af9-884a-60bc407e2453.csv') #A healthier _name_ starts with
+sfarm2 = pd.read_csv('State Farm - Four ways to a healthier _Name_/message-data-export.wsbipu3g.6fee9b9c-fc24-492e-b5fe-e2464b003431.csv') #Four ways to a healthier _Name_
+sfarm3 = pd.read_csv("State Farm - Friend, let's try this again/message-data-export.wsbipu3g.62116366-18d0-4e67-b987-62e28122620c.csv") #Friend, let's try this again
+sfarm4 = pd.read_csv('State Farm - Friend, your rewards are here/message-data-export.wsbipu3g.d39495b5-c7b6-401e-a176-e59a2f01fc2a.csv') #Friend, your rewards are here
+sfarm5 = pd.read_csv("State Farm - Friend, you're missing out on cash rewards/message-data-export.wsbipu3g.8a1038c6-01aa-48f3-8eaa-6db1890dca73.csv") #Friend, you're missing out on cash rewards
+sfarm6 = pd.read_csv('State Farm - Hey, join us/message-data-export.wsbipu3g.268d00bb-e70f-4e73-aa65-de1140ff212a.csv') #Hey, join us
+sfarm7 = pd.read_csv('State Farm - take next step toward healthier you/message-data-export.wsbipu3g.0a8ec5db-2ca3-4212-a64f-c0289eb5b060.csv') #take next step toward healthier you
+sfarm8 = pd.read_csv('State Farm - Welcome to your Good4U journey/message-data-export.wsbipu3g.a1ec75d6-5423-4758-ac28-e923cc2cd06d.csv') #Welcome to your Good4U journey
+
+
+
+folder2 = ['20 Bonus Points',
+  'Co-Workers + 20 points',
+ 'Join your work friends',
+ 'Last chance 20 Points',
+ 'MetLife - 4 ways to succeed with MetLife Wellbeing',
+ 'MetLife - hello, start your metlife wellbeing journey',
+ 'MetLife - Invest in your most valuable asset, you',
+ 'MetLife - Metlife Wellbeing Has Something Special For You',
+ 'MetLife - Win big with MetLife Wellbeing',
+ 'MetLife Boost your Health',
+ 'MetLife Ready for Healthier You',
+ 'MetLife Wellbeing Journey',
+ 'MetLife Wellbeing Journey - abridged',
+ 'State Farm - A healthier _name_ starts with',
+ 'State Farm - Four ways to a healthier _Name_',
+ "State Farm - Friend, let's try this again",
+ 'State Farm - Friend, your rewards are here',
+ "State Farm - Friend, you're missing out on cash rewards",
+ 'State Farm - Hey, join us',
+ 'State Farm - take next step toward healthier you',
+ 'State Farm - Welcome to your Good4U journey']
+
+alldata = (a20bp,cw20p,jwf,lc20p,met1,met2,met3,met4,met5,met6,met7,met8,met9,sfarm1,sfarm2,sfarm3,sfarm4,sfarm5,sfarm6,sfarm7,sfarm8)
+
+colnames = ['user_id', 'ConversationID', 'MessageID', 'MessageTitle', 'MessageType', 'MessageChannel',
+            'Folder_CampaignReference', 'Folder_CampaignName', 'MessageVersionSent', 'MessageStyle_EmailTemplate', 
+            'DeliveredAs', 'SentAt', 'OpenedAt', 'ClickedAt', 'HitGoalAt', 'Replied_RespondedAt', 'UnsubscribedAt', 
+            'BouncedAt', 'MarkedAsSpamAt']
+
+
+#Feature creation and manipulation
+
+newFeatures = {26719045 : (134, 12, "We want to welcome you to MetLife Wellbeing with 20 Bonus Points!", "Incentive", 0, 1, "Begin", "End", 3, "Text", 1, "image+highlight", 1, 1, ""),
+41137764 : (166, 12, "Here's why your co­workers are joining MetLife Wellbeing for 20 Extra Points", "Incentive", 0, 0, "NA", "End", 2, "Tabular", 0, "NA", 1, 0, ""),
+26704924 : (111, 12, "Join your work friends on MetLife Wellbeing & Earn 20 Bonus Points", "Incentive", 0, 1, "Begin", "End", 2, "Text", 1, "image", 1, 0, ""),
+26714821 : (109, 11, "LAST CHANCE: Claim 20 Bonus Points when you visit MetLife Wellbeing", "Incentive/Urgency", 0, 0, "NA", "End", 2, "Tabular", 1, "NA", 1, 0, ""),
+30929006 : (197, 10, "Mohamedahmed, here are 4 ways to succeed with MetLife Wellbeing", "Informative", 1, 0, "NA", "End", 2, "Tabular", 1, "Image", 0, 0, ""),
+20727084 : (317, 6, "Hello, start your MetLife Wellbeing journey", "Call to Action", 0, 1, "Begin", "Mid", 2, "Tabular", 0, "image+highlight", 0, 0, ""),
+20727086 : (348, 10, "Invest in your most valuable asset. MetLife Wellbeing can help", "Informative", 0, 1, "Begin", "Mid", 2, "Tabular", 0, "image+text", 0, 0, ""),
+20893468 : (275, 7, "MetLife Wellbeing has something special for you...", "Informative", 0, 1, "Begin", "Mid", 2, "Tabular", 1, "image+highlight", 0, 0, ""),
+47440746 : (144, 7, "MetLife Wellbeing has something special for you...", "Informative", 0, 1, "Begin", "End", 2, "Text", 1, "image+highlight", 0, 0, ""),
+20727087 : (235, 13, "Win big with MetLife Wellbeing. Join today and enter this week’s cash drawing!  ", "Call to Action ", 0, 1, "Begin", "Mid", 2, "Tabular", 0, "Image", 0 , 1, ""),
+20897470 : (230, 9, "Still want to boost your health? Join MetLife Wellbeing!  ", "Call to Action ", 0, 1, "Begin", "Begin", 1, "Tabular (Text)", 1, "Image", 0, 1, ""),
+47441342 : (230, 9, " Don't give up on your health. Join MetLife Wellbeing!  ", "Call to Action ", 0, 1, "Begin", "Begin", 1, "Tabular (Text)", 1, "Image", 0, 1, ""),
+20896492 : (204, 6, "Ready to be a healthier you?  ", "Curiosity", 0, 1, "Begin", "Mid", 1, "Tabular", 1, "Image", 0, 0, ""),
+47441035 : (204, 6, "Ready to be a healthier you?", "Curiosity", 0, 1, "Begin", "End", 2, "Text", 1, "image+highlight", 0, 0, ""),
+8648697 : (302, 6, "Welcome to your MetLife Wellbeing journey!", "Informative", 0, 0, "Begin", "End", 3, "Text", 0, "image+text", 1, 1, ""),
+56531227 : (169, 6, "Welcome to your MetLife Wellbeing journey!", "Informative", 1, 1, "Begin", "End", 2, "Text", 1, "image+text", 0, 1, ""),
+76733593 : (195, 11, "A healthier Jonathan starts with track, earn, and win using Good4U!", "Incentive", 1, 1, "Begin", "End", 3, "Text", 1, "image+highlight", 0, 1, ""),
+76734463 : (151, 11, "Four ways to get closer to a healthier Stephanie using Good4U! ", "Informative", 1, 1, "End", "End", 2, "Text", 1, "image+highlight", 0, 1, ""),
+85661931 : (147, 5, "Friend, let's try this again...", "Informative", 0, 1, "Begin", "End", 2, "Text", 0, "image+text", 0, 1, ""),
+86571799 : (129, 5, "Hmm, let's try this again...", "Informative", 0, 1, "Begin", "End", 2, "Text", 0, "image+text", 0, 0, ""),
+86246429 : (134, 4, "Friend, you have rewards!", "Informative", 0, 1, "Begin", "End", 2, "Text", 0, "image+text", 0, 1, ""),
+86574309 : (116, 4, "Friend, your rewards are here!", "Informative", 0, 1, "Begin", "End", 2, "Text", 0, "image+text", 0, 1, ""),
+85666816 : (101, 7, "Friend, you're missing out on cash rewards...", "Incentive", 0, 1, "Begin", "End", 2, "Text", 0, "image+text", 0, 0, ""),
+86341665 : (65, 4, "Friend, claim your rewards!", "Incentive", 0, 1, "Begin", "End", 2, "Text", 0, "image+highlight", 0, 1, ""),
+86247257 : (98, 4, "Seriously, your participation matters!", "Call to Action", 0, 1, "Begin", "End", 2, "Text", 0, "image+highlight", 0, 1, ""),
+87118941 : (90, 3, "Hey, join us!", "Call to Action", 0, 1, "Begin", "End", 2, "Text", 0, "image+highlight", 0, 1, ""),
+76734463 : (78, 8, "Take the next step towards a healthier you!", "curiosity", 0, 1, "mid", "End", 2, "Text", 0, "image+highlight", 0, 1, ""),
+85742507 : (105, 6, " Welcome to your Good4U journey, friend! ", "Informative", 0, 1, "Begin", "End", 2, "Text", 0, "image+highlight", 0, 1, "")}
+
+featureCol = ("Count_words_content","Count_words_subject","Subject_line","Subject_type","Subject_salutation_flag","Image_present_flag",
+              "Image_placement","Call_button_placement","call_button_count","content_type","Message_salutation_flag","Image_type","Disclaimer","Exclamation_Mark","Tone(TBD")
+
+msgVersion = (26719045,41137764,26704924,26714821,30929006,20727084,20727086,20893468,47440746,20727087,20897470,47441342,20896492,47441035,8648697,56531227,76733593,76734463,85661931,86571799,86246429,86574309,85666816,86341665,86247257,87118941,76734463,85742507)
+
+
+
+#Transforming the dataframe ***************************************************************************************
+#metlife and statefarm and others
+for i, data in enumerate(alldata):
+    data.columns = colnames  #renaming the columns
+    data.drop(['MessageID','ConversationID','MessageChannel','Folder_CampaignReference','Folder_CampaignName','MessageStyle_EmailTemplate','MessageType','DeliveredAs'], axis = 1, inplace = True)
+    #data['user_id'] = data['user_id'].astype('str', copy = False)
+    timecols = data.loc[:,'SentAt':'MarkedAsSpamAt'].columns
+    for tcolumns in timecols:
+        data[tcolumns] = pd.to_datetime(data[tcolumns])
+        
+    #SentPeriod   :(timeofday) message was sent  --- for deji( try doing this using an if statement)
+    data.loc[data['SentAt'].dt.hour < 8, "TimeOfDaySent"] = "NightMornHrs"
+    data.loc[(data['SentAt'].dt.hour >= 8) & (data['SentAt'].dt.hour < 17), "TimeOfDaySent"] = "workHrs"
+    data.loc[data['SentAt'].dt.hour >= 17, "TimeOfDaySent"] = "afterWorkHrs"
+    
+    #WeekDaySent
+    data['WeekDaySent'] = data['SentAt'].dt.weekday_name
+    
+    #TimeOfDayOpen
+    data.loc[data['OpenedAt'].dt.hour < 8, "TimeOfDayOpen"] = "NightMornHrs"
+    data.loc[(data['OpenedAt'].dt.hour >= 8) & (data['OpenedAt'].dt.hour < 17), "TimeOfDayOpen"] = "workHrs"
+    data.loc[data['OpenedAt'].dt.hour >= 17, "TimeOfDayOpen"] = "afterWorkHrs"
+ 
+    #WeekDayOpen
+    data['WeekDayOpen'] = data['OpenedAt'].dt.weekday_name
+    
+    #time it took to open campaign mail
+    timeToOpen = data['OpenedAt'] - data['SentAt']
+    #data['timeToOpenInDays'] = data[timeToOpen].dt.days
+    data['timeToOpenMins'] = timeToOpen.dt.total_seconds()/60   
+    
+    for columns in featureCol:
+        data[columns] = ''
+        
+    versionSent = data['MessageVersionSent'].unique()
+      
+    for version in versionSent:
+        if version in msgVersion:
+            data.loc[data["MessageVersionSent"] == version, featureCol ] = newFeatures[version]     
+        
+    data['folder'] = folder2[i]
+
+   
+#***********************************************************************************
+
+#merging all msg data and filtering out unwanted userid and message version sent       
+allmsg = pd.concat([a20bp,cw20p,jwf,lc20p,met1,met2,met3,met4,met5,met6,met7,met8,met9,sfarm1,sfarm2,sfarm3,sfarm4,sfarm5,sfarm6,sfarm7,sfarm8])
+allmsg = allmsg[~allmsg['user_id'].isin([379120000000000,379120000000000])]   #filtering unwanted user_id
+allmsg = allmsg[~allmsg['MessageVersionSent'].isin([59182527,76731781,32964691,20727083,47881988,48911103,52779088,84884537,85660308,85857362,76731782,86251826,76731777,85143902])]
+msgData = allmsg[allmsg['user_id'].notnull()]
+#allmsg.loc[:,('MessageVersionSent','folder')].drop_duplicates(['MessageVersionSent','folder'])
+        
+#datafile = ("a20bp","cw20p","jwf","lc20p","met1", "met2", "met3", "met4", "met5", "met6", "met7", "met8", "met9", "sfarm1", "sfarm2", "sfarm3", "sfarm4", "sfarm5", "sfarm6", "sfarm7", "sfarm8")
+
+
+#Exorting data to xlsx file--------------------------------------------------------------
+
+msgData.to_csv('msgData.csv', index = False)
+msgData.to_excel('msgData.xlsx',  index = False)
+
+help(pd.DataFrame.to_excel)
+
+msg1 = msgData[]
+msgVersion1 = (26719045,41137764,26704924,26714821,30929006,20727084,20727086,20893468,47440746,20727087,20897470,47441342,20896492,47441035)
+msgVersion2 = (8648697,56531227,76733593,76734463,85661931,86571799,86246429,86574309,85666816,86341665,86247257,87118941,76734463,85742507)
+
+
+msgpart1 = msgData[msgData['MessageVersionSent'].isin(msgVersion2)]
+msgpart2 = msgData[~msgData['MessageVersionSent'].isin(msgVersion2)]
+
+msgpart1.to_excel('msgpart1.xlsx',  index = False)
+msgpart2.to_excel('msgpart2.xlsx',  index = False)
+
+
