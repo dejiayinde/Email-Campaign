@@ -1,0 +1,753 @@
+"""Note: The timestamp associated with email data is the server time(Eastern Standard Time). Therefore, these time components of the 
+          data needs to be converted to the email-recipient's time zone"""
+          
+
+import pandas as pd
+import numpy as np
+import datetime as dt
+import pytz
+import json
+import re
+
+data = pd.read_table("C:/Users/djmax/UCONN Email Analysis 2018/working data/finalData.txt", engine = 'python', parse_dates = True)
+
+#Funtion:  Parsing String to Naive-Time (without timezone info) and converting same to Eastern Time
+def timeconv(i):
+    est = pytz.timezone('US/Eastern')
+    try:
+        t = dt.datetime.strptime(i, "%d%b%y:%H:%M:%S")
+        t = pytz.timezone('US/Eastern').localize(t)
+        return t
+    except:
+        return i
+
+#Function to convert timestamps to country specific timezones
+def tzone(df):
+    df['Sent_at_TZ'] = None
+    df['Opened_at_TZ'] = None
+    df['Clicked_at_TZ'] = None
+    df['Hit_goal_at_TZ'] = None
+    for i,j in zip(df.index,df.country):
+        
+        if j == "United States":
+            
+                if df.at[i, 'region'] in ["Connecticut", "Delaware", "Florida", "Georgia", "Indiana", "Kentucky",
+                                      "Maine", "Maryland", "Massachusetts", "Michigan", "New Hampshire",
+                                      "New Jersey", "New York", "North Carolina", "Ohio", "Pennsylvania",
+                                      "Rhode Island", "South Carolina", "Vermont", "Virginia", "District of Columbia",
+                                      "West Virginia"]:
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at']                    
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                        
+                        
+                                         
+                elif df.at[i, 'region'] in ["Alabama", "Arkansas", "Illinois", "Iowa", "Kansas", "Kentucky", "Louisiana",
+                                        "Minnesota", "Mississippi", "Missouri", "Nebraska", "North Dakota", "Oklahoma",
+                                        "South Dakota", "Tennessee", "Texas", "Wisconsin"]:
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('US/Central'))                 
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('US/Central')) 
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('US/Central')) 
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('US/Central')) 
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']
+                        
+                elif df.at[i, 'region'] == "Hawaii":
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('US/Hawaii'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('US/Hawaii'))  
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('US/Hawaii')) 
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('US/Hawaii')) 
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'] 
+                        
+                                
+                elif df.at[i, 'region'] in ["Arizona", "Colorado", "Idaho", "Montana", "New Mexico", "South Dakota", "Utah", "Wyoming"]:
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('US/Mountain')) 
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('US/Mountain')) 
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('US/Mountain')) 
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('US/Mountain')) 
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'] 
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('US/Mountain'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('US/Mountain'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'] 
+                        
+                        
+                elif df.at[i, 'region'] in ["California", "Nevada", "Oregon", "Washington"]:
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('US/Pacific'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('US/Pacific'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('US/Pacific'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('US/Pacific'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                        
+                        
+                    
+                elif df.at[i, 'region'] == "Alaska":
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('US/Alaska'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('US/Alaska')) 
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('US/Alaska')) 
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('US/Alaska')) 
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+                        
+
+        elif j == "Australia":
+            
+                if df.at[i, 'region'] == 'New South Wales':
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Australia/NSW'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Australia/NSW'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Australia/NSW'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Australia/NSW'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+                        
+
+                elif df.at[i, 'region'] == 'Queensland':
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Australia/Queensland'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Australia/Queensland'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Australia/Queensland'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Australia/Queensland'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+                        
+
+                elif df.at[i, 'region'] == 'Victoria':
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Australia/Victoria'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Australia/Victoria'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Australia/Victoria'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Australia/Victoria'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+                        
+
+                elif df.at[i, 'region'] == 'Western Australia':
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Australia/West'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Australia/West'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Australia/West'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Australia/West'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+                        
+                                        
+                else:
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Australia/ACT'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Australia/ACT'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']                    
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Australia/ACT'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Australia/ACT'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']   
+                        
+
+        elif j == "Canada":
+            
+                if df.at[i, 'region'] == 'Alberta':
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Canada/Mountain'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Canada/Mountain'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Canada/Mountain'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Canada/Mountain'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+                        
+
+                elif df.at[i, 'region'] == 'British Columbia':
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Canada/Pacific'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Canada/Pacific'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Canada/Pacific'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Canada/Pacific'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+                        
+
+                elif df.at[i, 'region'] == 'Manitoba':
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Canada/Central'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Canada/Central'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Canada/Central'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Canada/Central'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+
+
+                elif df.at[i, 'region'] == 'Ontario':
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Canada/Eastern'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Canada/Eastern'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'] 
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Canada/Eastern'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Canada/Eastern'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+                        
+
+                elif df.at[i, 'region'] == 'Quebec':
+                    df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Canada/Eastern'))
+                    try:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Canada/Eastern'))
+                    except:
+                        df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']  
+                    try:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Canada/Eastern'))
+                    except:
+                        df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+                    try:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Canada/Eastern'))
+                    except:
+                        df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                         
+                        
+                        
+#For for the rest of the world         
+            
+        
+        elif j in ["Ghana", "Ireland", "Senegal", "United Kingdom"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('UTC'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('UTC'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('UTC'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('UTC'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+                
+                
+        elif  j in ["Algeria", "Austria", "Belgium", "Czech Republic", "Denmark", "France", "Gabon", 
+                         "Germany", "Hungary", "Italy", "Morocco", "Netherlands", "Nigeria", "Norway", "Poland",
+                         "Serbia", "Slovenia", "Spain", "Sweden", "Switzerland", "Tunisia"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-1'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-1'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-1'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-1'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+            
+        elif  j in ["Bulgaria", "Cyprus", "Egypt", "Greece", "Israel", "Jordan", "Latvia", "Lebanon", "Libya",
+                    "Moldova, Republic of", "Palestinian Territory","Palestine", "Palestinian Territor", "Romania", "Rwanda", "South Africa", "Sudan", "Ukraine"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-2'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-2'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-2'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-2'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'] 
+                
+                
+        
+        elif  j in ["Bahrain", "Ethiopia", "Iraq", "Kenya", "Kuwait", "Qatar", "Saudi Arabia",
+                                "Tanzania, United Republic of", "Turkey", "Uganda", "Yemen"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-3'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-3'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-3'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-3'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'] 
+                
+                
+        elif  j in ["Armenia", "Azerbaijan", "Mauritius", "Oman", "United Arab Emirates"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-4'))
+            try:
+                df.at[i,'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-4'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-4'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-4'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+        
+        elif  j in ["Pakistan", "Turkmenistan", "Uzbekistan"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-5'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-5'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-5'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-5'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+
+
+        elif  j in ["Bangladesh", "Kazakhstan", "Kyrgyzstan"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-6'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-6'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-6'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-6'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+        
+        elif  j in ["Indonesia", "Thailand", "Vietnam"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-7'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-7'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-7'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-7'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+        
+        elif  j in ["China", "Hong Kong", "Malaysia", "Philippines", "Singapore", "Taiwan"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-8'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-8'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-8'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-8'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+        
+        elif  j in ["Japan", "Korea, Republic of"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-9'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-9'))
+            except: 
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-9'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-9'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+    
+        elif  j == "New Zealand":
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT-13'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT-13'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT-13'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT-13'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+        
+        elif  j == "Portugal":
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT+1'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT+1'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT+1'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT+1'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+        
+        elif  j in ["Argentina", "Brazil"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT+3'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT+3'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT+3'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT+3'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+        
+        elif  j in ["Aruba", "Bahamas", "Venezuela"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT+4'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT+4'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT+4'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT+4'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+        
+        elif  j in ["Canada", "Colombia", "Jamaica", "Peru"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT+5'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT+5'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT+5'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT+5'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+        
+        elif  j == "Mexico":
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Etc/GMT+6'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Etc/GMT+6'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Etc/GMT+6'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Etc/GMT+6'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+            
+        elif  j in ("Iran", "Iran, Islamic Republic of"):
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Iran'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Iran'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Iran'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Iran'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'] 
+                
+            
+        elif  j in ["India", "Sri Lanka"]:
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Asia/Kolkata'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Asia/Kolkata'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Asia/Kolkata'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Asia/Kolkata'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+            
+        elif  j == "Nepal":
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Asia/Kathmandu'))  
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Asia/Kathmandu'))   
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Asia/Kathmandu')) 
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Asia/Kathmandu')) 
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at']                 
+                
+            
+        elif  j == "Afghanistan":
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Asia/Kabul'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Asia/Kabul'))            
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Asia/Kabul')) 
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Asia/Kabul')) 
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'] 
+                
+                           
+        elif  j == "Russian Federation":
+            df.at[i, 'Sent_at_TZ']  = df.at[i,'Sent_at'].astimezone(pytz.timezone('Europe/Moscow'))
+            try:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at'].astimezone(pytz.timezone('Europe/Moscow'))
+            except:
+                df.at[i, 'Opened_at_TZ']  = df.at[i,'Opened_at']  
+            try:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at'].astimezone(pytz.timezone('Europe/Moscow'))
+            except:
+                df.at[i, 'Clicked_at_TZ']  = df.at[i,'Clicked_at']
+            try:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'].astimezone(pytz.timezone('Europe/Moscow'))
+            except:
+                df.at[i, 'Hit_goal_at_TZ']  = df.at[i,'Hit_goal_at'] 
+   
+
+
+
+#Dict: Abbreviation of US states
+
+usstates = '{ "AL": "Alabama", "AK": "Alaska","AS": "American Samoa", "AZ": "Arizona", "AR": "Arkansas", "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "DC": "District Of Columbia", "FM": "Federated States Of Micronesia", "FL": "Florida", "GA": "Georgia", "GU": "Guam", "HI": "Hawaii","ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MH": "Marshall Islands", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "MP": "Northern Mariana Islands", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PW": "Palau", "PA": "Pennsylvania", "PR": "Puerto Rico", "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont", "VI": "Virgin Islands", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming" }'
+usstates = json.loads(usstates)
+
+
+
+def transform(df):   '''This function takes in the second stage dataset and transforms it
+                        it calls the timeconv function to transform columns with datetime country specific timezones
+                        its sets the time of the day email was sent, received, and clicked
+                        it sets the day of the week email was sent, received and cliced'''
+ #parsing sent_at and Open_at to datetime   
+    def timeconv(i):
+        est = pytz.timezone('US/Eastern')
+        try:
+            t = dt.datetime.strptime(i, "%d%b%y:%H:%M:%S")
+            t = pytz.timezone('US/Eastern').localize(t)
+            return t
+        except:
+            return i 
+    df['Sent_at'] = df['Sent_at'].map(timeconv)
+    df['Opened_at'] = df['Opened_at'].map(timeconv)
+    df['Clicked_at'] = df['Clicked_at'].map(timeconv)
+    df['Hit_goal_at'] = df['Hit_goal_at'].map(timeconv)
+    
+    #df['country'] = df['country'].str.strip()
+    
+    df['split1'], df['split2'] = df.loc[(df['country'] == 'Anonymous Proxy') |(df['country'].isnull()) | (df['country'] =="Asia/Pacific Region") | (df['country'] =="Europe") | ((df['country'] == 'United States') &  (df['region'].isnull())) | ((df['country'] == 'United States') &  (df['region'] == 'Armed Forces Europe,')), 'branch_location'].str.rpartition(',').iloc[:,0],    df.loc[(df['country'] == 'Anonymous Proxy') | (df['country'].isnull()) | (df['country'] =="Asia/Pacific Region") | (df['country'] =="Europe") | ((df['country'] == 'United States') &  (df['region'].isnull())) | ((df['country'] == 'United States') &  (df['region'] == 'Armed Forces Europe,')), 'branch_location'].str.rpartition(',').iloc[:,2].str.upper().str.strip()
+      
+    
+#transforming branch_location to countries and regions        
+    def regionUS(x):
+        if x in usstates.keys():
+            return usstates[x]
+        else:
+            return 'Texas' #for united states without region info where branch location in other than usa
+
+    def countryUS(x):
+        if x in usstates.keys():
+            return 'United States'
+
+    
+    def country(x):    #other countries    
+        if re.search('CAIRO', x):
+            return 'Egypt'
+    
+        elif re.match('KU', x):
+            return 'Kuwait'
+    
+        elif re.match('QA', x):
+            return 'Qatar'
+   
+        elif re.match('', x) or x == 'U' or x == 'O' or re.search('UAE', x) or re.search('UNITED ARAB', x) or re.search('U.A.E', x)         or re.search('JAFZA', x) or re.search('DUBAI', x):
+            return 'United Arab Emirates'    
+    
+        elif re.match('SAUDI', x):
+            return 'Saudi Arabia'
+    
+        else:
+            return x.title()
+        
+        
+    def tod(x):      #Function generates time of day sent/open/clicked (i.e. earlybird, busybees, sundown)
+        if x.hour >= 5 and  x.hour < 9:      #5am to 8:59am
+            return 'Early birds'
+        elif x.hour >= 9 and  x.hour < 16:   #9am to 3:59pm
+            return 'Busy Bees'
+        elif x.hour >= 16 or  x.hour < 5:   #4pm to 4:59am
+            return 'Sundown'
+        else:
+            return np.nan
+    
+           
+    df.loc[(df['country'].isnull()) & (df['split2'].isin(usstates)), 'region'] = df.loc[(df['country'].isnull()) & (df['split2'].isin(usstates)), 'split2'].map(regionUS)
+    df.loc[(df['country'].isnull()) & (df['split2'].isin(usstates)), 'country'] = df.loc[(df['country'].isnull()) & (df['split2'].isin(usstates)), 'split2'].map(countryUS)
+    df.loc[(df['country'] == 'United States') &  (df['region'].isnull()), 'region'] = df.loc[(df['country'] == 'United States') &  (df['region'].isnull()), 'split2'].map(regionUS)
+    df.loc[(df['country'] == 'United States') &  (df['region'] == 'Armed Forces Europe,'), 'region'] = df.loc[(df['country'] == 'United States') &  (df['region'] == 'Armed Forces Europe,'), 'split2'].map(regionUS)
+    
+    
+    df.loc[(df['country'].isnull()) | (df['country'] =="Asia/Pacific Region"), 'country'] = df.loc[(df['country'].isnull()) | (df['country'] =="Asia/Pacific Region"), 'split2'].map(country)
+    df.loc[df['country'] == 'Europe', 'country'] = df.loc[df['country'] == 'Europe', 'split2'].map(country)
+    df.loc[df['country'] == 'Anonymous Proxy', 'country'] = df.loc[df['country'] == 'Anonymous Proxy', 'split2'].map(country)
+     
+    
+    tzone(df)  #sets the time of the day an email was sent and opened i.e. earlybird, busybees, sundown
+    df['DaySent'] = df['Sent_at'].dt.weekday_name
+    df['DayOpened'] = df['Opened_at'].dt.weekday_name
+    df['Time_Sent'] = df['Sent_at_TZ'].map(tod) 
+    df['Time_open'] =  df['Opened_at_TZ'].map(tod)
+    
+    return df
+
+#Calling the transform function to perform time conversion on the data
+
+transform(data)
+
+
+#exports the transformed dataset
+data1.to_csv ('finaldata_11_12_18.txt', index = "False")
+
