@@ -89,7 +89,7 @@ msgData['timeToOpenMins'] = timeToOpen.dt.total_seconds()/60
 
 #exporting processed finalDataset to text file 
 
-mergedData.to_csv('finalData.csv', index = False)
+mergedData.to_csv('finalData.txt', index = False)
 
 
 
